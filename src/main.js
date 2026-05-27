@@ -8,7 +8,7 @@
 //   src/io.js              — recording, save/load settings
 //   src/shaders/warp.frag  — GLSL rendering logic
 //   src/panel/             — React UI panel
-//   CLAUDE.md              — full architecture map (start here)
+//   AGENTS.md              — full architecture map (start here)
 // ─────────────────────────────────────────────────────────────────────────────
 
 import "./geist-fonts.js";

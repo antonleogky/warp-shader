@@ -57,5 +57,5 @@ A `vercel.json` is also included if you prefer Vercel (build command:
 
 ## For AI agents
 
-See [CLAUDE.md](./CLAUDE.md) for a full architecture map, file descriptions,
+See [AGENTS.md](./AGENTS.md) for a full architecture map, file descriptions,
 and step-by-step guides for common edits (adding params, presets, sections).
