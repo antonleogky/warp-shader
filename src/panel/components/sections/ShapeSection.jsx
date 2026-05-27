@@ -8,7 +8,7 @@ import { PANEL_SETTING_PY } from "@/panel/lib/settingLayout";
 import { cn } from "@/panel/lib/utils";
 import { Shuffle } from "lucide-react";
 
-export function DensitySection({ sectionId = "shape" }) {
+export function ShapeSection({ sectionId = "shape" }) {
   const { params, notifyChange } = usePanel();
 
   return (
