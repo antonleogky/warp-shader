@@ -1,4 +1,5 @@
 import "./geist-fonts.js";
+import "./app.css";
 import vertSource from "./shaders/quad.vert?raw";
 
 const DEV_PORT = 5190;
@@ -8,18 +9,29 @@ if (import.meta.env.DEV && badge) {
   badge.hidden = false;
   badge.textContent = `warp-shader · :${port}`;
   if (port !== String(DEV_PORT)) {
-    badge.style.color = "hsl(0 70% 65%)";
+    badge.style.color = "hsl(0 70% 45%)";
     badge.title = `Expected port ${DEV_PORT}. You may be on the wrong dev server.`;
   }
 }
 import fragSource from "./shaders/warp.frag?raw";
-import { createControlPanel, MAX_BEAM_COLORS, hexToRgb } from "./panel.js";
+import { mountPanel } from "./panel/index.jsx";
+import { MAX_BEAM_COLORS, hexToRgb } from "./panel/lib/color.js";
+import {
+  applyPresetToParams,
+  getLoopDurationSec,
+  resetSectionParams,
+} from "./panel/lib/presets.js";
 
 const canvas = document.getElementById("canvas");
+const viewport = document.getElementById("viewport");
+const canvasMeta = document.getElementById("canvas-meta");
+const recordingPill = document.getElementById("recording-pill");
+
 const gl = canvas.getContext("webgl2", {
-  alpha: false,
+  alpha: true,
   antialias: false,
   preserveDrawingBuffer: true,
+  premultipliedAlpha: false,
 });
 
 if (!gl) {
@@ -55,12 +67,78 @@ const params = {
 
   brightness: 1.15,
   coreWhite: 0.72,
-  backgroundColor: { r: 0.01, g: 0.02, b: 0.06 },
+  backgroundColor: "#010206",
+  backgroundAlpha: 1,
+  backgroundUseImage: false,
+  backgroundImageDataUrl: "",
   bloomStrength: 0.55,
   exposure: 1.05,
   vignette: 0.15,
   seed: 1.0,
 };
+
+function migrateLegacyParams() {
+  const bg = params.backgroundColor;
+  if (bg && typeof bg === "object" && "r" in bg) {
+    const toHex = (v) =>
+      Math.round(Math.min(1, Math.max(0, v)) * 255)
+        .toString(16)
+        .padStart(2, "0");
+    params.backgroundColor = `#${toHex(bg.r)}${toHex(bg.g)}${toHex(bg.b)}`;
+  }
+}
+
+migrateLegacyParams();
+
+let bgTexture = null;
+let bgImageReady = false;
+
+function ensureBgTexture() {
+  if (bgTexture) return;
+  bgTexture = gl.createTexture();
+  gl.bindTexture(gl.TEXTURE_2D, bgTexture);
+  gl.texImage2D(
+    gl.TEXTURE_2D,
+    0,
+    gl.RGBA,
+    1,
+    1,
+    0,
+    gl.RGBA,
+    gl.UNSIGNED_BYTE,
+    new Uint8Array([0, 0, 0, 255])
+  );
+  gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_WRAP_S, gl.CLAMP_TO_EDGE);
+  gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_WRAP_T, gl.CLAMP_TO_EDGE);
+  gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_MIN_FILTER, gl.LINEAR);
+  gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_MAG_FILTER, gl.LINEAR);
+}
+
+function uploadBackgroundImage(dataUrl) {
+  ensureBgTexture();
+  if (!dataUrl) {
+    bgImageReady = false;
+    return;
+  }
+  const img = new Image();
+  img.onload = () => {
+    gl.bindTexture(gl.TEXTURE_2D, bgTexture);
+    gl.texImage2D(gl.TEXTURE_2D, 0, gl.RGBA, gl.RGBA, gl.UNSIGNED_BYTE, img);
+    bgImageReady = true;
+  };
+  img.onerror = () => {
+    bgImageReady = false;
+  };
+  img.src = dataUrl;
+}
+
+function updateViewportChecker() {
+  if (!viewport) return;
+  const show =
+    params.backgroundAlpha < 0.995 ||
+    (params.backgroundUseImage && params.backgroundImageDataUrl);
+  viewport.classList.toggle("viewport--checker", show);
+}
 
 function compileShader(type, source) {
   const shader = gl.createShader(type);
@@ -138,6 +216,8 @@ for (const name of [
   "u_brightness",
   "u_coreWhite",
   "u_backgroundColor",
+  "u_backgroundImage",
+  "u_useBackgroundImage",
   "u_bloomStrength",
   "u_exposure",
   "u_vignette",
@@ -151,6 +231,8 @@ for (const name of [
     console.warn(`Uniform not found: ${name}`);
   }
 }
+
+ensureBgTexture();
 
 function resize() {
   const dpr = Math.min(window.devicePixelRatio || 1, 2);
@@ -205,18 +287,43 @@ function uploadUniforms(time) {
 
   gl.uniform1f(uniforms.u_brightness, params.brightness);
   gl.uniform1f(uniforms.u_coreWhite, params.coreWhite);
-  gl.uniform3f(
-    uniforms.u_backgroundColor,
-    params.backgroundColor.r,
-    params.backgroundColor.g,
-    params.backgroundColor.b
-  );
+
+  const [br, bg, bb] = hexToRgb(params.backgroundColor ?? "#000000");
+  const ba = Math.min(1, Math.max(0, params.backgroundAlpha ?? 1));
+  gl.uniform4f(uniforms.u_backgroundColor, br, bg, bb, ba);
+
+  const useImage =
+    params.backgroundUseImage &&
+    params.backgroundImageDataUrl &&
+    bgImageReady;
+  gl.activeTexture(gl.TEXTURE0);
+  gl.bindTexture(gl.TEXTURE_2D, bgTexture);
+  gl.uniform1i(uniforms.u_backgroundImage, 0);
+  gl.uniform1f(uniforms.u_useBackgroundImage, useImage ? 1 : 0);
+
   gl.uniform1f(uniforms.u_bloomStrength, params.bloomStrength);
   gl.uniform1f(uniforms.u_exposure, params.exposure);
   gl.uniform1f(uniforms.u_vignette, params.vignette);
 }
 
+function prepareFramebuffer() {
+  const alpha = params.backgroundAlpha ?? 1;
+  const needsBlend = alpha < 0.995;
+
+  if (needsBlend) {
+    gl.enable(gl.BLEND);
+    gl.blendFunc(gl.SRC_ALPHA, gl.ONE_MINUS_SRC_ALPHA);
+    gl.clearColor(0, 0, 0, 0);
+  } else {
+    gl.disable(gl.BLEND);
+    const [r, g, b] = hexToRgb(params.backgroundColor ?? "#000000");
+    gl.clearColor(r, g, b, 1);
+  }
+  gl.clear(gl.COLOR_BUFFER_BIT);
+}
+
 function render(time) {
+  prepareFramebuffer();
   uploadUniforms(time * 0.001);
   gl.drawArrays(gl.TRIANGLE_STRIP, 0, 4);
 }
@@ -226,6 +333,8 @@ let recordChunks = [];
 
 function startRecording() {
   if (recorder?.state === "recording") return;
+  panel.setRecording(true);
+  if (recordingPill) recordingPill.hidden = false;
   recordChunks = [];
   const stream = canvas.captureStream(60);
   recorder = new MediaRecorder(stream, {
@@ -238,6 +347,8 @@ function startRecording() {
     if (e.data.size > 0) recordChunks.push(e.data);
   };
   recorder.onstop = () => {
+    panel.setRecording(false);
+    if (recordingPill) recordingPill.hidden = true;
     const blob = new Blob(recordChunks, { type: "video/webm" });
     const url = URL.createObjectURL(blob);
     const a = document.createElement("a");
@@ -264,47 +375,62 @@ function saveSettings() {
   URL.revokeObjectURL(url);
 }
 
-function applyReferencePreset() {
-  Object.assign(params, {
-    speed: 0.35,
-    repeatPeriod: 0.28,
-    streakLength: 0.09,
-    streakCount: 72,
-    thickness: 0.022,
-    cornerRadius: 0.55,
-    centerVoidRadius: 0.08,
-    jitter: 0.35,
-    jitterSpin: 0.22,
-    jitterSpinMix: 0.5,
-    beamColorCount: 4,
-    brightness: 1.15,
-    coreWhite: 0.72,
-    bloomStrength: 0.55,
-    exposure: 1.05,
-    vignette: 0.15,
-    seed: 1,
-  });
-  params.beamColors = [
-    "#5ce1ff",
-    "#4d8dff",
-    "#c56bff",
-    "#ffffff",
-    "#00e8c6",
-    "#ff6eb4",
-    "#ffd166",
-    "#a8b4ff",
-  ];
+function updateCanvasMeta() {
+  if (!canvasMeta) return;
+  const loopSec = getLoopDurationSec(params).toFixed(1);
+  canvasMeta.textContent = `1080 × 1080 · ${loopSec}s loop @ 60fps`;
 }
 
-const panel = createControlPanel(document.getElementById("panel"), params, {
-  onPreset: () => {
-    applyReferencePreset();
+function onPanelChange() {
+  updateViewportChecker();
+  updateCanvasMeta();
+  if (params.backgroundImageDataUrl) {
+    uploadBackgroundImage(params.backgroundImageDataUrl);
+  } else {
+    bgImageReady = false;
+  }
+}
+
+async function loadSettingsFile(file) {
+  try {
+    const text = await file.text();
+    const data = JSON.parse(text);
+    Object.assign(params, data);
+    if (Array.isArray(data.beamColors)) {
+      params.beamColors = [...data.beamColors];
+    }
+    migrateLegacyParams();
     panel.syncAll();
-  },
+    onPanelChange();
+  } catch (err) {
+    console.error("Failed to load settings:", err);
+    alert("Could not load settings — check that the file is valid JSON.");
+  }
+}
+
+const panel = mountPanel(document.getElementById("panel"), params, {
+  onChange: onPanelChange,
+  onRecord: startRecording,
   onSave: saveSettings,
+  onLoad: loadSettingsFile,
+  onApplyPreset: (id) => {
+    if (applyPresetToParams(params, id)) {
+      onPanelChange();
+    }
+  },
+  onResetSection: (sectionId) => {
+    if (resetSectionParams(params, sectionId)) {
+      onPanelChange();
+    }
+  },
 });
 
 panel.syncAll();
+onPanelChange();
+updateCanvasMeta();
+if (params.backgroundImageDataUrl) {
+  uploadBackgroundImage(params.backgroundImageDataUrl);
+}
 
 window.addEventListener("keydown", (e) => {
   if (e.key === "r" || e.key === "R") startRecording();

@@ -7,7 +7,11 @@
   </head>
   <body data-app="warp-shader">
     <div class="app">
-      <main class="viewport">
+      <main class="viewport" id="viewport">
+        <div class="viewport-chrome">
+          <p class="canvas-meta" id="canvas-meta">1080 × 1080</p>
+          <p class="recording-pill" id="recording-pill" hidden>Recording</p>
+        </div>
         <canvas id="canvas"></canvas>
         <p class="app-badge" id="app-badge" hidden>warp-shader</p>
       </main>

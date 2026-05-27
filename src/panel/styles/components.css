@@ -1,0 +1,134 @@
+/**
+ * Panel-scoped shadcn refinements (registry base + design tokens).
+ * @see https://ui.shadcn.com/docs/
+ */
+
+#panel [data-slot="button"]:not([data-size="icon"]):not([data-size="icon-xs"]):not(
+    [data-size="icon-sm"]
+  ):not([data-size="icon-lg"]) {
+  border-radius: var(--radius-pill);
+  font-size: var(--type-control-size);
+  line-height: var(--type-control-leading);
+  font-weight: var(--type-control-weight);
+  transition-property: background-color, border-color, color, box-shadow, transform;
+  transition-duration: var(--duration-fast);
+  transition-timing-function: var(--ease-out);
+}
+
+#panel [data-slot="button"].panel-tap:active:not(:disabled) {
+  transform: scale(0.96);
+}
+
+#panel [data-slot="input"] {
+  border-radius: var(--radius-input);
+  background-color: var(--background);
+  font-size: var(--type-mono-size);
+  line-height: var(--type-mono-leading);
+  font-family: var(--font-mono);
+  font-variant-numeric: tabular-nums;
+  transition-property: color, box-shadow, border-color;
+  transition-duration: var(--duration-fast);
+  transition-timing-function: var(--ease-out);
+}
+
+/* Setting value fields (slider numbers, etc.) — borderless */
+#panel [data-slot="input"].panel-setting-input,
+#panel [data-slot="input"][data-setting-value] {
+  border: none;
+  background-color: transparent;
+  box-shadow: none;
+}
+
+#panel [data-slot="input"].panel-setting-input:focus-visible,
+#panel [data-slot="input"][data-setting-value]:focus-visible {
+  border: none;
+  box-shadow: none;
+  outline: none;
+}
+
+#panel [data-slot="slider-track"][data-orientation="horizontal"] {
+  height: 0.5rem;
+}
+
+#panel [data-slot="slider-thumb"] {
+  background-color: var(--background);
+  cursor: grab;
+  transition-property: box-shadow, transform;
+  transition-duration: var(--duration-fast);
+  transition-timing-function: var(--ease-out);
+}
+
+#panel [data-slot="slider-thumb"]:active {
+  cursor: grabbing;
+  transform: scale(0.96);
+}
+
+/* Segment control — full pill track + pill selected thumb */
+#panel [data-slot="tabs-list"][data-variant="segment"],
+#panel .segment-track {
+  box-sizing: border-box;
+  height: 2.5rem;
+  max-height: 2.5rem;
+  align-items: stretch;
+  border-radius: var(--radius-pill);
+  overflow: hidden;
+}
+
+#panel [data-slot="tabs-list"][data-variant="segment"] [data-slot="tabs-trigger"],
+#panel .segment-trigger {
+  box-sizing: border-box;
+  height: 100%;
+  max-height: 100%;
+  min-height: 0;
+  align-self: stretch;
+  -webkit-tap-highlight-color: transparent;
+  border-radius: var(--radius-pill);
+}
+
+/* Sliding pill (SlidingSegmentList) */
+#panel .segment-slide-indicator {
+  z-index: 0;
+  transition:
+    left var(--duration-normal) var(--ease-out),
+    width var(--duration-normal) var(--ease-out),
+    opacity var(--duration-fast) var(--ease-out);
+}
+
+#panel [data-slot="tabs-list"][data-sliding-segment] [data-slot="tabs-trigger"] {
+  position: relative;
+  z-index: 1;
+  background-color: transparent;
+}
+
+#panel [data-slot="tabs-list"][data-sliding-segment] [data-slot="tabs-trigger"][data-state="active"] {
+  background-color: transparent;
+  box-shadow: none;
+  color: var(--foreground);
+}
+
+/* Static segments without sliding indicator */
+#panel [data-slot="tabs-list"][data-variant="segment"]:not([data-sliding-segment]) [data-slot="tabs-trigger"][data-state="active"] {
+  z-index: 1;
+  border-radius: var(--radius-pill);
+  background-color: var(--background);
+  color: var(--foreground);
+  box-shadow: 0 1px 2px rgb(0 0 0 / 0.07);
+}
+
+#panel [data-slot="slider"][data-panel-slider-dragging] [data-slot="slider-thumb"] {
+  transition: none;
+}
+
+#panel [data-slot="slider"][data-panel-slider-dragging] [data-slot="slider-range"] {
+  transition: none;
+}
+
+#panel [data-slot="popover-content"] {
+  border-radius: var(--radius-shell);
+}
+
+#panel [data-slot="tooltip-content"] {
+  font-size: var(--type-caption-size);
+  line-height: var(--type-caption-leading);
+  border-radius: var(--radius-input);
+}

@@ -21,7 +21,9 @@ uniform vec3 u_beamColors[8];
 uniform int u_beamColorCount;
 uniform float u_brightness;
 uniform float u_coreWhite;
-uniform vec3 u_backgroundColor;
+uniform vec4 u_backgroundColor;
+uniform sampler2D u_backgroundImage;
+uniform float u_useBackgroundImage;
 uniform float u_bloomStrength;
 uniform float u_exposure;
 uniform float u_vignette;
@@ -50,11 +52,25 @@ vec3 pickBeamColor(int idx) {
   return u_beamColors[7];
 }
 
+vec4 sampleBackground() {
+  vec2 bgUv = gl_FragCoord.xy / u_resolution;
+  bgUv.y = 1.0 - bgUv.y;
+
+  vec4 bg = u_backgroundColor;
+
+  if (u_useBackgroundImage > 0.5) {
+    vec4 img = texture(u_backgroundImage, bgUv);
+    bg.rgb = mix(bg.rgb, img.rgb, img.a);
+    bg.a = bg.a * (1.0 - img.a) + img.a;
+  }
+
+  return bg;
+}
+
 float singleStreak(float r, float a, float id, float loopT) {
   float baseAngle = hash11(id * 3.17) * TAU;
   float staticJitter = (hash11(id * 7.91) - 0.5) * u_jitter * TAU;
 
-  // Subset of beams rotate clockwise; per-beam speed variation
   float spinGate = step(hash11(id * 11.37), u_jitterSpinMix);
   float spinRate = u_jitterSpin * (0.35 + 0.65 * hash11(id * 13.91));
   float spinAngle = spinGate * spinRate * u_time;
@@ -70,11 +86,10 @@ float singleStreak(float r, float a, float id, float loopT) {
     return 0.0;
   }
 
-  // Rounded caps: taper beam width toward both tips (circular-arc profile)
   float cap = max(u_cornerRadius * lenNorm * 0.5, 0.001);
   float hf = clamp(local / cap, 0.0, 1.0);
   float tf = clamp((lenNorm - local) / cap, 0.0, 1.0);
-  float capWidthScale = sqrt(min(hf, tf));  // sqrt → circular cross-section
+  float capWidthScale = sqrt(min(hf, tf));
 
   float across = angleDiff(a, streakAngle);
   float effThick = max(u_thickness * capWidthScale, 0.0005);
@@ -105,7 +120,10 @@ void main() {
   float loopT = fract(u_time * u_speed);
   int colorCount = clamp(u_beamColorCount, 1, MAX_BEAM_COLORS);
 
-  vec3 col = u_backgroundColor;
+  vec4 bg = sampleBackground();
+  vec3 col = bg.rgb;
+  float outA = bg.a;
+
   float voidMask = smoothstep(u_centerVoidRadius * 0.65, u_centerVoidRadius * 1.15, r);
 
   float accum = 0.0;
@@ -126,12 +144,25 @@ void main() {
     accum += s;
   }
 
-  col += streakAccum * voidMask;
+  float voidedAccum = accum * voidMask;
+  vec3 streaks = streakAccum * voidMask;
+  float bloom = voidedAccum * u_bloomStrength;
+  streaks += streakAccum * bloom * 0.35 * voidMask;
 
-  float bloom = accum * u_bloomStrength;
-  col += streakAccum * bloom * 0.35;
-  col = mix(col, col + bloom * 0.15, u_bloomStrength);
-  col *= u_exposure;
+  float bgLum = dot(bg.rgb, vec3(0.299, 0.587, 0.114));
+  float streakMix = clamp(voidedAccum * 1.35, 0.0, 1.0);
+
+  if (bgLum > 0.45) {
+  // Additive glow clips on light backgrounds — use alpha blend instead.
+    vec3 streakRgb = streaks / max(voidedAccum, 0.0001);
+    streakRgb = clamp(streakRgb * u_exposure, 0.0, 1.0);
+    col = mix(bg.rgb, streakRgb, streakMix);
+    col = mix(col, col + bloom * 0.12, u_bloomStrength);
+  } else {
+    col = bg.rgb + streaks;
+    col = mix(col, col + bloom * 0.15, u_bloomStrength);
+    col *= u_exposure;
+  }
 
   if (u_vignette > 0.0) {
     float vig = smoothstep(1.2, 0.25, r * (1.0 + u_vignette * 0.5));
@@ -139,5 +170,9 @@ void main() {
   }
 
   col = pow(max(col, 0.0), vec3(0.92));
-  outColor = vec4(col, 1.0);
+
+  float streakAlpha = min(1.0, accum * 0.92 * voidMask);
+  outA = max(outA, streakAlpha);
+
+  outColor = vec4(col, clamp(outA, 0.0, 1.0));
 }
