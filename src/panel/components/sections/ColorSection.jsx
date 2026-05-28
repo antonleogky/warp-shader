@@ -1,6 +1,6 @@
 import { usePanel } from "@/panel/PanelContext";
 import { FieldGroup } from "@/panel/components/fields/FieldGroup";
-import { SliderField } from "@/panel/components/fields/SliderField";
+import { ScrubField } from "@/panel/components/fields/ScrubField";
 import { ColorPopoverField } from "@/panel/components/fields/ColorPopoverField";
 import { FieldLabel } from "@/panel/components/fields/FieldLabel";
 import { MAX_BEAM_COLORS, clamp, normalizeHex } from "@/panel/lib/color";
@@ -30,16 +30,12 @@ export function ColorSection({ sectionId = "color" }) {
         title="Palette"
         hint="Which colors beams draw from."
       >
-        <SliderField
+        <ScrubField
           label="Active colors"
           hint={SETTING_HINTS.activeColors}
-          min={1}
-          max={MAX_BEAM_COLORS}
-          step={1}
+          min={1} max={MAX_BEAM_COLORS} step={1}
           value={count}
-          onChange={(v) => {
-            params.beamColorCount = v;
-          }}
+          onChange={(v) => { params.beamColorCount = v; }}
         />
         <div className={PANEL_SETTING_ROW}>
           <FieldLabel hint="Tap a swatch to edit that beam color." className="mb-2">
@@ -70,61 +66,42 @@ export function ColorSection({ sectionId = "color" }) {
           </div>
         </div>
       </FieldGroup>
+
       <FieldGroup title="Grade" hint="Overall intensity and glow after compositing.">
-        <SliderField
+        <ScrubField
           label="Brightness"
           hint={SETTING_HINTS.brightness}
-          min={0.2}
-          max={2.5}
-          step={0.01}
+          min={0.2} max={2.5} step={0.01}
           value={params.brightness}
-          onChange={(v) => {
-            params.brightness = v;
-          }}
+          onChange={(v) => { params.brightness = v; }}
         />
-        <SliderField
+        <ScrubField
           label="Core white"
           hint={SETTING_HINTS.coreWhite}
-          min={0}
-          max={1}
-          step={0.01}
+          min={0} max={1} step={0.01}
           value={params.coreWhite}
-          onChange={(v) => {
-            params.coreWhite = v;
-          }}
+          onChange={(v) => { params.coreWhite = v; }}
         />
-        <SliderField
+        <ScrubField
           label="Bloom"
           hint={SETTING_HINTS.bloom}
-          min={0}
-          max={2}
-          step={0.01}
+          min={0} max={2} step={0.01}
           value={params.bloomStrength}
-          onChange={(v) => {
-            params.bloomStrength = v;
-          }}
+          onChange={(v) => { params.bloomStrength = v; }}
         />
-        <SliderField
+        <ScrubField
           label="Exposure"
           hint={SETTING_HINTS.exposure}
-          min={0.3}
-          max={2.5}
-          step={0.01}
+          min={0.3} max={2.5} step={0.01}
           value={params.exposure}
-          onChange={(v) => {
-            params.exposure = v;
-          }}
+          onChange={(v) => { params.exposure = v; }}
         />
-        <SliderField
+        <ScrubField
           label="Vignette"
           hint={SETTING_HINTS.vignette}
-          min={0}
-          max={1}
-          step={0.01}
+          min={0} max={1} step={0.01}
           value={params.vignette}
-          onChange={(v) => {
-            params.vignette = v;
-          }}
+          onChange={(v) => { params.vignette = v; }}
         />
       </FieldGroup>
     </>

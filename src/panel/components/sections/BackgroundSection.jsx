@@ -1,7 +1,7 @@
 import { useRef } from "react";
 import { usePanel } from "@/panel/PanelContext";
 import { FieldGroup } from "@/panel/components/fields/FieldGroup";
-import { SliderField } from "@/panel/components/fields/SliderField";
+import { ScrubField } from "@/panel/components/fields/ScrubField";
 import { ColorPopoverField } from "@/panel/components/fields/ColorPopoverField";
 import { SegmentedControl } from "@/panel/components/SegmentedControl";
 import { Button } from "@/panel/components/ui/button";
@@ -56,16 +56,12 @@ export function BackgroundSection({ sectionId = "background" }) {
               color={params.backgroundColor}
               onColorChange={(hex) => patch({ backgroundColor: hex })}
             />
-            <SliderField
+            <ScrubField
               label="Opacity"
               hint={SETTING_HINTS.bgOpacity}
-              min={0}
-              max={100}
-              step={1}
+              min={0} max={100} step={1}
               value={Math.round((params.backgroundAlpha ?? 1) * 100)}
-              onChange={(pct) => {
-                params.backgroundAlpha = pct / 100;
-              }}
+              onChange={(pct) => { params.backgroundAlpha = pct / 100; }}
             />
           </>
         )}
@@ -74,12 +70,8 @@ export function BackgroundSection({ sectionId = "background" }) {
           <div className={cn("space-y-2.5", PANEL_SETTING_ROW)}>
             {params.backgroundImageDataUrl ? (
               <div
-                className={cn(
-                  "h-[100px] w-full rounded-lg border border-border bg-cover bg-center shadow-sm"
-                )}
-                style={{
-                  backgroundImage: `url(${params.backgroundImageDataUrl})`,
-                }}
+                className="h-[100px] w-full rounded-lg border border-border bg-cover bg-center shadow-sm"
+                style={{ backgroundImage: `url(${params.backgroundImageDataUrl})` }}
               />
             ) : (
               <div className="type-caption flex h-[100px] items-center justify-center rounded-[var(--radius-control)] border border-dashed border-border bg-muted/30">
@@ -102,26 +94,17 @@ export function BackgroundSection({ sectionId = "background" }) {
                 size="sm"
                 className="h-9 rounded-full"
                 disabled={!params.backgroundImageDataUrl}
-                onClick={() =>
-                  patch({
-                    backgroundImageDataUrl: "",
-                    backgroundUseImage: false,
-                  })
-                }
+                onClick={() => patch({ backgroundImageDataUrl: "", backgroundUseImage: false })}
               >
                 Remove
               </Button>
             </div>
-            <SliderField
+            <ScrubField
               label="Image opacity"
               hint="How strongly the plate shows through behind the beams."
-              min={0}
-              max={100}
-              step={1}
+              min={0} max={100} step={1}
               value={Math.round((params.backgroundAlpha ?? 1) * 100)}
-              onChange={(pct) => {
-                params.backgroundAlpha = pct / 100;
-              }}
+              onChange={(pct) => { params.backgroundAlpha = pct / 100; }}
             />
           </div>
         )}
