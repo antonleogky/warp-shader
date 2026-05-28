@@ -76,13 +76,13 @@
   transform-origin: center;
 }
 
-/* No #panel prefix — tooltips portal to document body, outside #panel */
-[data-slot="tooltip-content"][data-state="delayed-open"] .panel-tooltip-inner,
-[data-slot="tooltip-content"][data-state="instant-open"] .panel-tooltip-inner {
+/* Animate the content element directly — Radix sets data-state on it */
+[data-slot="tooltip-content"][data-state="delayed-open"],
+[data-slot="tooltip-content"][data-state="instant-open"] {
   animation: panel-tooltip-in 250ms var(--ease-out) both;
 }
 
-[data-slot="tooltip-content"][data-state="closed"] .panel-tooltip-inner {
+[data-slot="tooltip-content"][data-state="closed"] {
   animation: panel-tooltip-out 100ms var(--ease-in) both;
 }
 
@@ -114,7 +114,7 @@
     transform: none;
   }
 
-  [data-slot="tooltip-content"] .panel-tooltip-inner {
+  [data-slot="tooltip-content"] {
     animation: none;
   }
 

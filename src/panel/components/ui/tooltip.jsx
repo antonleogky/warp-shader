@@ -43,9 +43,7 @@ function TooltipContent({
         <span className="panel-tooltip-inner type-caption block text-white">
           {children}
         </span>
-        <TooltipPrimitive.Arrow
-          className="z-50 size-2.5 translate-y-[calc(-50%_-_2px)] rotate-45 rounded-[2px] bg-foreground fill-foreground"
-        />
+        <TooltipPrimitive.Arrow width={10} height={5} className="fill-[#111111]" />
       </TooltipPrimitive.Content>
     </TooltipPrimitive.Portal>
   );
