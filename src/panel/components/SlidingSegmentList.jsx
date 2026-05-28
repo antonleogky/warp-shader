@@ -32,6 +32,10 @@ export function SlidingSegmentList({
           left: indicator.left,
           width: indicator.width,
           opacity: indicator.ready ? 1 : 0,
+          // Suppress all transitions on first mount/remount so the pill
+          // snaps to position instantly. CSS transitions re-enable one
+          // frame later (see useSlidingSegmentIndicator).
+          transition: indicator.skipTransition ? "none" : undefined,
         }}
       />
       {children}
