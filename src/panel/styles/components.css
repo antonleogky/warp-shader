@@ -222,8 +222,18 @@
   border-radius: var(--radius-shell);
 }
 
-#panel [data-slot="tooltip-content"] {
+/* Tooltip — portal-rendered outside #panel so selectors must be global */
+[data-slot="tooltip-content"] {
   font-size: var(--type-caption-size);
   line-height: var(--type-caption-leading);
   border-radius: var(--radius-input);
+  color: white;
+}
+
+/* Trigger label lifts 2px on hover — signals interactivity, feels alive */
+#panel .panel-tooltip-trigger {
+  transition: transform var(--duration-fast) var(--ease-out);
+}
+#panel .panel-tooltip-trigger:hover {
+  transform: translateY(-2px);
 }
