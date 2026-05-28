@@ -1,7 +1,7 @@
 import { useEffect, useState } from "react";
 import { BackgroundSection } from "@/panel/components/sections/BackgroundSection";
 import { MotionSection } from "@/panel/components/sections/MotionSection";
-import { DensitySection } from "@/panel/components/sections/DensitySection";
+import { ShapeSection } from "@/panel/components/sections/ShapeSection";
 import { ColorSection } from "@/panel/components/sections/ColorSection";
 import { ExportBar } from "@/panel/components/ExportBar";
 import { SegmentedControl } from "@/panel/components/SegmentedControl";
@@ -15,7 +15,7 @@ const SECTIONS = [
   { id: "background", label: "Bg", Panel: BackgroundSection },
   { id: "color", label: "Color", Panel: ColorSection },
   { id: "motion", label: "Motion", Panel: MotionSection },
-  { id: "shape", label: "Shape", Panel: DensitySection },
+  { id: "shape", label: "Shape", Panel: ShapeSection },
 ];
 
 export function DesignSidebar() {
