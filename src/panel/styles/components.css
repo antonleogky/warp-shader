@@ -132,13 +132,19 @@
   height: 2.5rem;
   padding: 0 0.75rem;
   border-radius: var(--radius-control);
-  background-color: var(--foreground);
-  color: var(--background);
+  background-color: oklch(0.91 0 0);
+  color: var(--foreground);
   cursor: ew-resize;
   user-select: none;
   touch-action: none;
   overflow: hidden;
   -webkit-user-select: none;
+  /* Press feedback — interruptible CSS transition (not keyframes) */
+  transition: transform var(--duration-fast) var(--ease-out);
+}
+
+#panel .scrub-field:active {
+  transform: scale(0.96);
 }
 
 /* Progress fill — tracks value position within range */
@@ -147,12 +153,28 @@
   position: absolute;
   inset: 0;
   width: var(--fill-pct, 0%);
-  background: rgb(255 255 255 / 0.09);
+  background: oklch(0.145 0 0 / 0.12);
   pointer-events: none;
+  /* Smooth fill settling when drag ends; suppressed during active drag */
+  transition: width var(--duration-fast) var(--ease-out);
+}
+
+/* Disable fill transition while actively dragging — no lag */
+#panel .scrub-field[data-dragging]::before {
+  transition: none;
+}
+
+/* Inner row — receives bounce animation, isolated from outer scale */
+#panel .scrub-field__inner {
+  position: relative;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 0.5rem;
+  width: 100%;
 }
 
 #panel .scrub-field__label {
-  position: relative;
   font-size: 0.8125rem;
   font-weight: 500;
   letter-spacing: 0.01em;
@@ -163,11 +185,12 @@
   position: relative;
   font-family: var(--font-geist-mono, monospace);
   font-size: 0.75rem;
-  opacity: 0.65;
+  opacity: 0.5;
   flex-shrink: 0;
 }
 
-/* Bounce keyframes — slight overshoot when limit is hit */
+/* Bounce keyframes — applied to inner content wrapper so it doesn't conflict
+   with the outer element's scale-on-press transform */
 @keyframes scrub-bounce-left {
   0%   { transform: translateX(0); }
   35%  { transform: translateX(-6px); }
@@ -182,11 +205,11 @@
   100% { transform: translateX(0); }
 }
 
-#panel .scrub-bounce-left {
+#panel .scrub-field__inner.scrub-bounce-left {
   animation: scrub-bounce-left 260ms var(--ease-out);
 }
 
-#panel .scrub-bounce-right {
+#panel .scrub-field__inner.scrub-bounce-right {
   animation: scrub-bounce-right 260ms var(--ease-out);
 }
 
