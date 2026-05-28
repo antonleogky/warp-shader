@@ -80,6 +80,7 @@ export function ScrubField({ label, value, onChange, min, max, step = 0.01, hint
     barWidth.current = barRef.current.getBoundingClientRect().width || 200;
     atLimit.current = false;
     isDragging.current = true;
+    barRef.current.setAttribute("data-dragging", "");
   };
 
   const onPointerMove = (e) => {
@@ -102,6 +103,7 @@ export function ScrubField({ label, value, onChange, min, max, step = 0.01, hint
   const onPointerUp = () => {
     if (!isDragging.current) return;
     isDragging.current = false;
+    barRef.current?.removeAttribute("data-dragging");
     notifyChange();
   };
 
@@ -116,16 +118,20 @@ export function ScrubField({ label, value, onChange, min, max, step = 0.01, hint
             aria-valuemin={min}
             aria-valuemax={max}
             aria-valuenow={local}
-            className={cn("scrub-field", bounce.active && `scrub-bounce-${bounce.dir}`)}
+            className="scrub-field"
             style={{ "--fill-pct": `${fillPct}%` }}
             onPointerDown={onPointerDown}
             onPointerMove={onPointerMove}
             onPointerUp={onPointerUp}
             onLostPointerCapture={onPointerUp}
-            onAnimationEnd={() => setBounce((b) => ({ ...b, active: false }))}
           >
-            <span className="scrub-field__label">{label}</span>
-            <span className="scrub-field__value">{display}</span>
+            <div
+              className={cn("scrub-field__inner", bounce.active && `scrub-bounce-${bounce.dir}`)}
+              onAnimationEnd={() => setBounce((b) => ({ ...b, active: false }))}
+            >
+              <span className="scrub-field__label">{label}</span>
+              <span className="scrub-field__value">{display}</span>
+            </div>
           </div>
         </TooltipTrigger>
         {hint ? (
