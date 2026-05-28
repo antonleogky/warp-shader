@@ -79,33 +79,21 @@
 /* No #panel prefix — tooltips portal to document body, outside #panel */
 [data-slot="tooltip-content"][data-state="delayed-open"] .panel-tooltip-inner,
 [data-slot="tooltip-content"][data-state="instant-open"] .panel-tooltip-inner {
-  animation: panel-tooltip-in var(--duration-normal) var(--ease-out) both;
+  animation: panel-tooltip-in 250ms var(--ease-out) both;
 }
 
 [data-slot="tooltip-content"][data-state="closed"] .panel-tooltip-inner {
-  animation: panel-tooltip-out var(--duration-fast) var(--ease-in) both;
+  animation: panel-tooltip-out 100ms var(--ease-in) both;
 }
 
 @keyframes panel-tooltip-in {
-  from {
-    opacity: 0;
-    transform: translateY(2px);
-  }
-  to {
-    opacity: 1;
-    transform: translateY(0);
-  }
+  from { opacity: 0; transform: translateY(4px); }
+  to   { opacity: 1; transform: translateY(0); }
 }
 
 @keyframes panel-tooltip-out {
-  from {
-    opacity: 1;
-    transform: translateY(0);
-  }
-  to {
-    opacity: 0;
-    transform: translateY(1px);
-  }
+  from { opacity: 1; transform: translateY(0); }
+  to   { opacity: 0; transform: translateY(2px); }
 }
 
 @media (prefers-reduced-motion: reduce) {
