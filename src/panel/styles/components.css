@@ -225,9 +225,13 @@
 
 /* Tooltip — portal-rendered outside #panel so selectors must be global */
 [data-slot="tooltip-content"] {
-  font-size: var(--type-caption-size);
-  line-height: var(--type-caption-leading);
-  border-radius: var(--radius-input);
+  border-radius: 12px;
+  padding: 6px 8px;
+  max-width: 260px;
+  font-size: 12px;
+  line-height: 1.4;
+  background-color: #111111;
+  color: #ffffff;
 }
 
 [data-slot="tooltip-content"] .panel-tooltip-inner {
