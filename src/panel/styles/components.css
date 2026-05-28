@@ -197,8 +197,8 @@
    with the outer element's scale-on-press transform */
 @keyframes scrub-bounce-left {
   0%   { transform: translateX(0); }
-  35%  { transform: translateX(-2px); }
-  70%  { transform: translateX(2px); }
+  35%  { transform: translateX(-1px); }
+  70%  { transform: translateX(1px); }
   100% { transform: translateX(0); }
 }
 
