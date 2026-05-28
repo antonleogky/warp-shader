@@ -72,6 +72,7 @@
   align-items: stretch;
   border-radius: var(--radius-pill);
   overflow: hidden;
+  background-color: #ebebeb !important; /* override Tailwind bg-muted/60 */
 }
 
 #panel [data-slot="tabs-list"][data-variant="segment"] [data-slot="tabs-trigger"],
@@ -132,7 +133,7 @@
   height: 32px;
   padding: 0 0.75rem;
   border-radius: 24px;
-  background-color: oklch(0.97 0 0);
+  background-color: #ebebeb;
   color: var(--foreground);
   cursor: ew-resize;
   user-select: none;
