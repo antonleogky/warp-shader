@@ -76,16 +76,6 @@
   transform-origin: center;
 }
 
-/* Animate the content element directly — Radix sets data-state on it */
-[data-slot="tooltip-content"][data-state="delayed-open"],
-[data-slot="tooltip-content"][data-state="instant-open"] {
-  animation: panel-tooltip-in 250ms var(--ease-out) both;
-}
-
-[data-slot="tooltip-content"][data-state="closed"] {
-  animation: panel-tooltip-out 100ms var(--ease-in) both;
-}
-
 @keyframes panel-tooltip-in {
   from { opacity: 0; transform: translateY(4px); }
   to   { opacity: 1; transform: translateY(0); }
@@ -94,6 +84,15 @@
 @keyframes panel-tooltip-out {
   from { opacity: 1; transform: translateY(0); }
   to   { opacity: 0; transform: translateY(2px); }
+}
+
+[data-slot="tooltip-content"][data-state="delayed-open"] .panel-tooltip-inner,
+[data-slot="tooltip-content"][data-state="instant-open"] .panel-tooltip-inner {
+  animation: panel-tooltip-in 250ms var(--ease-out) both;
+}
+
+[data-slot="tooltip-content"][data-state="closed"] .panel-tooltip-inner {
+  animation: panel-tooltip-out 100ms var(--ease-in) both;
 }
 
 @media (prefers-reduced-motion: reduce) {
@@ -114,7 +113,7 @@
     transform: none;
   }
 
-  [data-slot="tooltip-content"] {
+  [data-slot="tooltip-content"] .panel-tooltip-inner {
     animation: none;
   }
 
