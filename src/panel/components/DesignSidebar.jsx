@@ -51,7 +51,7 @@ export function DesignSidebar() {
         )}
         style={{ "--stagger-index": 2 }}
       >
-        <div className="border-b border-border px-5 py-3">
+        <div className="border-b border-border px-5 py-3" style={{ backgroundColor: "var(--surface-mid)" }}>
           <SlidingSegmentList
             activeValue={section}
             className="grid w-full"
