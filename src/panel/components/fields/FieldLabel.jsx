@@ -23,7 +23,7 @@ export function FieldLabel({ children, hint, className }) {
       <TooltipTrigger asChild>
         <span
           className={cn(
-            "type-label flex min-w-0 flex-1 cursor-default truncate",
+            "panel-tooltip-trigger type-label flex min-w-0 flex-1 cursor-default truncate",
             className
           )}
         >
