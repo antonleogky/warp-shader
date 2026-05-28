@@ -227,6 +227,9 @@
   font-size: var(--type-caption-size);
   line-height: var(--type-caption-leading);
   border-radius: var(--radius-input);
-  color: white;
+}
+
+[data-slot="tooltip-content"] .panel-tooltip-inner {
+  color: #ffffff !important;
 }
 

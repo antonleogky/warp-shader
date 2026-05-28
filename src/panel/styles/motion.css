@@ -76,12 +76,13 @@
   transform-origin: center;
 }
 
-#panel [data-slot="tooltip-content"][data-state="delayed-open"] .panel-tooltip-inner,
-#panel [data-slot="tooltip-content"][data-state="instant-open"] .panel-tooltip-inner {
+/* No #panel prefix — tooltips portal to document body, outside #panel */
+[data-slot="tooltip-content"][data-state="delayed-open"] .panel-tooltip-inner,
+[data-slot="tooltip-content"][data-state="instant-open"] .panel-tooltip-inner {
   animation: panel-tooltip-in var(--duration-normal) var(--ease-out) both;
 }
 
-#panel [data-slot="tooltip-content"][data-state="closed"] .panel-tooltip-inner {
+[data-slot="tooltip-content"][data-state="closed"] .panel-tooltip-inner {
   animation: panel-tooltip-out var(--duration-fast) var(--ease-in) both;
 }
 
@@ -125,7 +126,7 @@
     transform: none;
   }
 
-  #panel [data-slot="tooltip-content"] .panel-tooltip-inner {
+  [data-slot="tooltip-content"] .panel-tooltip-inner {
     animation: none;
   }
 

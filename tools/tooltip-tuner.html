@@ -1,0 +1,583 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<title>Tooltip Tuner</title>
+<style>
+  *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+  :root {
+    --font: -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+    --mono: ui-monospace, monospace;
+    --bg: #f0f0f0;
+    --surface: #fff;
+    --border: #e0e0e0;
+    --text: #111;
+    --text-dim: #888;
+
+    /* ── Tunable tooltip values ── */
+    --tt-bg: #111111;
+    --tt-text: #ffffff;
+    --tt-radius: 8px;
+    --tt-px: 12px;
+    --tt-py: 6px;
+    --tt-font-size: 12px;
+    --tt-line-height: 1.4;
+    --tt-shadow: 0 4px 12px rgba(0,0,0,0.18);
+    --tt-arrow-size: 6px;
+    --tt-enter-dur: 200ms;
+    --tt-enter-dist: 4px;
+    --tt-exit-dur: 120ms;
+    --tt-max-width: 220px;
+  }
+
+  body {
+    font-family: var(--font);
+    background: var(--bg);
+    color: var(--text);
+    min-height: 100dvh;
+    display: grid;
+    grid-template-columns: 1fr 320px;
+    grid-template-rows: auto 1fr;
+  }
+
+  header {
+    grid-column: 1 / -1;
+    padding: 16px 24px;
+    background: var(--surface);
+    border-bottom: 1px solid var(--border);
+    display: flex;
+    align-items: center;
+    gap: 12px;
+  }
+  header h1 { font-size: 15px; font-weight: 600; }
+  header p  { font-size: 13px; color: var(--text-dim); }
+
+  /* ── Preview ── */
+  .preview {
+    padding: 60px 40px;
+    display: flex;
+    flex-direction: column;
+    align-items: flex-start;
+    gap: 48px;
+  }
+
+  .preview-label {
+    font-size: 11px;
+    font-weight: 700;
+    letter-spacing: 0.08em;
+    text-transform: uppercase;
+    color: var(--text-dim);
+    margin-bottom: 20px;
+  }
+
+  /* ── Trigger rows ── */
+  .trigger-group { display: flex; flex-direction: column; gap: 16px; }
+
+  .trigger-wrap {
+    position: relative;
+    display: inline-flex;
+    align-items: center;
+  }
+
+  /* The fake label / scrub triggers */
+  .fake-label {
+    font-size: 13px;
+    font-weight: 500;
+    cursor: default;
+    color: #111;
+    padding: 2px 0;
+    border-bottom: 1px dashed #bbb;
+    user-select: none;
+  }
+
+  .fake-scrub {
+    display: inline-flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 8px;
+    height: 32px;
+    padding: 0 12px;
+    border-radius: 24px;
+    background: #ebebeb;
+    font-size: 13px;
+    font-weight: 500;
+    cursor: ew-resize;
+    user-select: none;
+    min-width: 180px;
+  }
+  .fake-scrub span:last-child {
+    font-family: var(--mono);
+    font-size: 11px;
+    opacity: 0.5;
+  }
+
+  /* ── Tooltip ── */
+  .tooltip-wrap {
+    position: relative;
+    display: inline-block;
+  }
+
+  .tooltip {
+    position: absolute;
+    bottom: calc(100% + var(--tt-arrow-size) + 6px);
+    left: 50%;
+    transform: translateX(-50%) translateY(0);
+    background: var(--tt-bg);
+    color: var(--tt-text);
+    font-size: var(--tt-font-size);
+    line-height: var(--tt-line-height);
+    border-radius: var(--tt-radius);
+    padding: var(--tt-py) var(--tt-px);
+    max-width: var(--tt-max-width);
+    white-space: normal;
+    word-break: break-word;
+    box-shadow: var(--tt-shadow);
+    pointer-events: none;
+    opacity: 0;
+    z-index: 100;
+  }
+
+  /* Arrow */
+  .tooltip::after {
+    content: "";
+    position: absolute;
+    top: 100%;
+    left: 50%;
+    transform: translateX(-50%) translateY(-50%) rotate(45deg);
+    width: calc(var(--tt-arrow-size) * 1.4);
+    height: calc(var(--tt-arrow-size) * 1.4);
+    background: var(--tt-bg);
+    border-radius: 2px;
+  }
+
+  /* Visible state */
+  .tooltip.visible {
+    animation: tt-in var(--tt-enter-dur) cubic-bezier(0.2,0,0,1) forwards;
+  }
+  .tooltip.hiding {
+    animation: tt-out var(--tt-exit-dur) cubic-bezier(0.4,0,1,1) forwards;
+  }
+
+  @keyframes tt-in {
+    from { opacity: 0; transform: translateX(-50%) translateY(var(--tt-enter-dist)); }
+    to   { opacity: 1; transform: translateX(-50%) translateY(0); }
+  }
+  @keyframes tt-out {
+    from { opacity: 1; transform: translateX(-50%) translateY(0); }
+    to   { opacity: 0; transform: translateX(-50%) translateY(2px); }
+  }
+
+  /* ── Controls ── */
+  .controls {
+    background: var(--surface);
+    border-left: 1px solid var(--border);
+    padding: 20px;
+    overflow-y: auto;
+    display: flex;
+    flex-direction: column;
+    gap: 0;
+  }
+
+  .section-title {
+    font-size: 11px;
+    font-weight: 700;
+    letter-spacing: 0.09em;
+    text-transform: uppercase;
+    color: var(--text-dim);
+    padding: 16px 0 8px;
+  }
+  .section-title:first-child { padding-top: 4px; }
+  .divider { height: 1px; background: var(--border); margin: 8px 0; }
+
+  .control-row {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 8px;
+    padding: 5px 0;
+  }
+  .control-row label { font-size: 12px; font-weight: 500; flex: 1; white-space: nowrap; }
+  .control-row .unit { font-size: 11px; color: var(--text-dim); width: 24px; text-align: right; flex-shrink: 0; }
+  .control-row .val  { font-family: var(--mono); font-size: 11px; color: var(--text-dim); width: 34px; text-align: right; flex-shrink: 0; }
+
+  input[type="range"] {
+    -webkit-appearance: none;
+    width: 110px;
+    height: 4px;
+    border-radius: 2px;
+    background: #ddd;
+    outline: none;
+    flex-shrink: 0;
+  }
+  input[type="range"]::-webkit-slider-thumb {
+    -webkit-appearance: none;
+    width: 13px;
+    height: 13px;
+    border-radius: 50%;
+    background: #111;
+    cursor: pointer;
+  }
+
+  input[type="color"] {
+    width: 32px;
+    height: 24px;
+    border: 1px solid #ddd;
+    border-radius: 4px;
+    padding: 1px;
+    cursor: pointer;
+    background: none;
+    flex-shrink: 0;
+  }
+
+  /* ── Output ── */
+  .output-section {
+    margin-top: auto;
+    padding-top: 16px;
+    border-top: 1px solid var(--border);
+  }
+  .output-title {
+    font-size: 11px;
+    font-weight: 700;
+    letter-spacing: 0.09em;
+    text-transform: uppercase;
+    color: var(--text-dim);
+    margin-bottom: 8px;
+  }
+  .output-box {
+    background: #f0f0f0;
+    border-radius: 8px;
+    padding: 10px 12px;
+    font-family: var(--mono);
+    font-size: 10.5px;
+    line-height: 1.7;
+    color: #333;
+    white-space: pre;
+    overflow-x: auto;
+    max-height: 200px;
+    overflow-y: auto;
+  }
+  .copy-btn {
+    margin-top: 8px;
+    width: 100%;
+    padding: 8px;
+    background: #111;
+    color: #fff;
+    border: none;
+    border-radius: 8px;
+    font-size: 13px;
+    font-weight: 600;
+    cursor: pointer;
+    transition: opacity 150ms;
+  }
+  .copy-btn:hover { opacity: 0.8; }
+</style>
+</head>
+<body>
+
+<header>
+  <div>
+    <h1>Tooltip Tuner</h1>
+    <p>Hover the triggers below · Tune on the right · Copy CSS</p>
+  </div>
+</header>
+
+<main class="preview">
+  <div>
+    <div class="preview-label">Labels with tooltips</div>
+    <div class="trigger-group">
+      <div class="tooltip-wrap">
+        <span class="fake-label" data-tip="How fast the loop runs. Period in seconds is roughly 1 ÷ speed.">Loop speed</span>
+        <div class="tooltip">How fast the loop runs. Period in seconds is roughly 1 ÷ speed.</div>
+      </div>
+      <div class="tooltip-wrap">
+        <span class="fake-label" data-tip="Solid fill colour behind the warp effect.">Fill</span>
+        <div class="tooltip">Solid fill colour behind the warp effect.</div>
+      </div>
+      <div class="tooltip-wrap">
+        <span class="fake-label" data-tip="How strongly the plate shows through behind the beams.">Image opacity</span>
+        <div class="tooltip">How strongly the plate shows through behind the beams.</div>
+      </div>
+    </div>
+  </div>
+
+  <div>
+    <div class="preview-label">Scrub fields with tooltips</div>
+    <div class="trigger-group">
+      <div class="tooltip-wrap">
+        <div class="fake-scrub" data-tip="How fast the loop runs. Period in seconds is roughly 1 ÷ speed.">
+          <span>Loop speed</span><span>0.80</span>
+        </div>
+        <div class="tooltip">How fast the loop runs. Period in seconds is roughly 1 ÷ speed.</div>
+      </div>
+      <div class="tooltip-wrap">
+        <div class="fake-scrub" data-tip="Controls the number of active beam colours drawn each frame.">
+          <span>Active colors</span><span>4</span>
+        </div>
+        <div class="tooltip">Controls the number of active beam colours drawn each frame.</div>
+      </div>
+    </div>
+  </div>
+</main>
+
+<aside class="controls">
+
+  <div class="section-title">Color</div>
+  <div class="control-row">
+    <label>Background</label>
+    <input type="color" id="tt-bg" value="#111111">
+    <span class="val" id="tt-bg-val">#111111</span>
+  </div>
+  <div class="control-row">
+    <label>Text</label>
+    <input type="color" id="tt-text" value="#ffffff">
+    <span class="val" id="tt-text-val">#ffffff</span>
+  </div>
+
+  <div class="divider"></div>
+  <div class="section-title">Shape</div>
+  <div class="control-row">
+    <label>Border radius</label>
+    <input type="range" id="tt-radius" min="0" max="24" step="1" value="8">
+    <span class="val" id="tt-radius-val">8</span>
+    <span class="unit">px</span>
+  </div>
+  <div class="control-row">
+    <label>Padding X</label>
+    <input type="range" id="tt-px" min="4" max="24" step="1" value="12">
+    <span class="val" id="tt-px-val">12</span>
+    <span class="unit">px</span>
+  </div>
+  <div class="control-row">
+    <label>Padding Y</label>
+    <input type="range" id="tt-py" min="2" max="16" step="1" value="6">
+    <span class="val" id="tt-py-val">6</span>
+    <span class="unit">px</span>
+  </div>
+  <div class="control-row">
+    <label>Max width</label>
+    <input type="range" id="tt-max-width" min="100" max="320" step="4" value="220">
+    <span class="val" id="tt-max-width-val">220</span>
+    <span class="unit">px</span>
+  </div>
+  <div class="control-row">
+    <label>Arrow size</label>
+    <input type="range" id="tt-arrow-size" min="0" max="12" step="1" value="6">
+    <span class="val" id="tt-arrow-size-val">6</span>
+    <span class="unit">px</span>
+  </div>
+
+  <div class="divider"></div>
+  <div class="section-title">Typography</div>
+  <div class="control-row">
+    <label>Font size</label>
+    <input type="range" id="tt-font-size" min="10" max="16" step="0.5" value="12">
+    <span class="val" id="tt-font-size-val">12</span>
+    <span class="unit">px</span>
+  </div>
+  <div class="control-row">
+    <label>Line height</label>
+    <input type="range" id="tt-line-height" min="1" max="2" step="0.05" value="1.4">
+    <span class="val" id="tt-line-height-val">1.4</span>
+    <span class="unit"></span>
+  </div>
+
+  <div class="divider"></div>
+  <div class="section-title">Animation</div>
+  <div class="control-row">
+    <label>Enter duration</label>
+    <input type="range" id="tt-enter-dur" min="50" max="600" step="10" value="200">
+    <span class="val" id="tt-enter-dur-val">200</span>
+    <span class="unit">ms</span>
+  </div>
+  <div class="control-row">
+    <label>Enter distance</label>
+    <input type="range" id="tt-enter-dist" min="0" max="16" step="1" value="4">
+    <span class="val" id="tt-enter-dist-val">4</span>
+    <span class="unit">px</span>
+  </div>
+  <div class="control-row">
+    <label>Exit duration</label>
+    <input type="range" id="tt-exit-dur" min="30" max="400" step="10" value="120">
+    <span class="val" id="tt-exit-dur-val">120</span>
+    <span class="unit">ms</span>
+  </div>
+
+  <div class="output-section">
+    <div class="output-title">CSS output</div>
+    <div class="output-box" id="output"></div>
+    <button class="copy-btn" id="copy-btn">Copy CSS</button>
+  </div>
+
+</aside>
+
+<script>
+// ── Tooltip hover logic ────────────────────────────────────────────────────
+document.querySelectorAll(".tooltip-wrap").forEach((wrap) => {
+  const tip = wrap.querySelector(".tooltip");
+  let hideTimer = null;
+
+  wrap.addEventListener("mouseenter", () => {
+    clearTimeout(hideTimer);
+    tip.classList.remove("hiding");
+    tip.classList.add("visible");
+    tip.style.opacity = "";
+  });
+
+  wrap.addEventListener("mouseleave", () => {
+    tip.classList.remove("visible");
+    tip.classList.add("hiding");
+    hideTimer = setTimeout(() => {
+      tip.classList.remove("hiding");
+    }, parseFloat(getComputedStyle(document.documentElement).getPropertyValue("--tt-exit-dur")) || 120);
+  });
+});
+
+// ── Control wiring ─────────────────────────────────────────────────────────
+const root = document.documentElement;
+
+const rangeControls = [
+  { id: "tt-radius",    prop: "--tt-radius",    suffix: "px", fmt: v => v + "px" },
+  { id: "tt-px",        prop: "--tt-px",         suffix: "px", fmt: v => v + "px" },
+  { id: "tt-py",        prop: "--tt-py",         suffix: "px", fmt: v => v + "px" },
+  { id: "tt-max-width", prop: "--tt-max-width",  suffix: "px", fmt: v => v + "px" },
+  { id: "tt-arrow-size",prop: "--tt-arrow-size", suffix: "px", fmt: v => v + "px" },
+  { id: "tt-font-size", prop: "--tt-font-size",  suffix: "px", fmt: v => v + "px" },
+  { id: "tt-line-height",prop:"--tt-line-height",suffix: "",   fmt: v => String(v) },
+  { id: "tt-enter-dur", prop: "--tt-enter-dur",  suffix: "ms", fmt: v => v + "ms" },
+  { id: "tt-enter-dist",prop: "--tt-enter-dist", suffix: "px", fmt: v => v + "px" },
+  { id: "tt-exit-dur",  prop: "--tt-exit-dur",   suffix: "ms", fmt: v => v + "ms" },
+];
+
+const colorControls = [
+  { id: "tt-bg",   prop: "--tt-bg" },
+  { id: "tt-text", prop: "--tt-text" },
+];
+
+function updateOutput() {
+  const get = (id) => document.getElementById(id).value;
+  const bg   = get("tt-bg");
+  const text = get("tt-text");
+  const r    = get("tt-radius");
+  const px   = get("tt-px");
+  const py   = get("tt-py");
+  const mw   = get("tt-max-width");
+  const as   = get("tt-arrow-size");
+  const fs   = get("tt-font-size");
+  const lh   = get("tt-line-height");
+  const ed   = get("tt-enter-dur");
+  const edist= get("tt-enter-dist");
+  const exd  = get("tt-exit-dur");
+
+  document.getElementById("output").textContent =
+`/* components.css / motion.css */
+[data-slot="tooltip-content"] {
+  border-radius: ${r}px;
+  padding: ${py}px ${px}px;
+  max-width: ${mw}px;
+  font-size: ${fs}px;
+  line-height: ${lh};
+  background-color: ${bg};
+  color: ${text};
+}
+[data-slot="tooltip-content"] .panel-tooltip-inner {
+  color: ${text} !important;
+}
+/* Arrow size via TooltipPrimitive.Arrow className */
+/* size-${as > 0 ? Math.round(as * 1.4) : 0} (approx) */
+
+@keyframes panel-tooltip-in {
+  from { opacity: 0; transform: translateY(${edist}px); }
+  to   { opacity: 1; transform: translateY(0); }
+}
+@keyframes panel-tooltip-out {
+  from { opacity: 1; transform: translateY(0); }
+  to   { opacity: 0; transform: translateY(2px); }
+}
+/* enter: ${ed}ms  exit: ${exd}ms */`;
+}
+
+rangeControls.forEach(({ id, prop, fmt }) => {
+  const input = document.getElementById(id);
+  const val   = document.getElementById(id + "-val");
+  function sync() {
+    const v = parseFloat(input.value);
+    val.textContent = v;
+    root.style.setProperty(prop, fmt(v));
+    updateOutput();
+  }
+  input.addEventListener("input", sync);
+  sync();
+});
+
+colorControls.forEach(({ id, prop }) => {
+  const input = document.getElementById(id);
+  const val   = document.getElementById(id + "-val");
+  function sync() {
+    root.style.setProperty(prop, input.value);
+    val.textContent = input.value;
+    updateOutput();
+  }
+  input.addEventListener("input", sync);
+  sync();
+});
+
+// ── Copy ──────────────────────────────────────────────────────────────────
+document.getElementById("copy-btn").addEventListener("click", () => {
+  const get = (id) => document.getElementById(id).value;
+  const bg   = get("tt-bg");
+  const text = get("tt-text");
+  const r    = get("tt-radius");
+  const px   = get("tt-px");
+  const py   = get("tt-py");
+  const mw   = get("tt-max-width");
+  const fs   = get("tt-font-size");
+  const lh   = get("tt-line-height");
+  const ed   = get("tt-enter-dur");
+  const edist= get("tt-enter-dist");
+  const exd  = get("tt-exit-dur");
+
+  const css =
+`/* ── Tooltip ── components.css ──────────────────────────────── */
+[data-slot="tooltip-content"] {
+  border-radius: ${r}px;
+  padding: ${py}px ${px}px;
+  max-width: ${mw}px;
+  font-size: ${fs}px;
+  line-height: ${lh};
+  background-color: ${bg};
+  color: ${text};
+}
+[data-slot="tooltip-content"] .panel-tooltip-inner {
+  color: ${text} !important;
+}
+
+/* ── Tooltip animation ── motion.css ─────────────────────────── */
+@keyframes panel-tooltip-in {
+  from { opacity: 0; transform: translateY(${edist}px); }
+  to   { opacity: 1; transform: translateY(0); }
+}
+@keyframes panel-tooltip-out {
+  from { opacity: 1; transform: translateY(0); }
+  to   { opacity: 0; transform: translateY(2px); }
+}
+[data-slot="tooltip-content"][data-state="delayed-open"] .panel-tooltip-inner,
+[data-slot="tooltip-content"][data-state="instant-open"] .panel-tooltip-inner {
+  animation: panel-tooltip-in ${ed}ms var(--ease-out) both;
+}
+[data-slot="tooltip-content"][data-state="closed"] .panel-tooltip-inner {
+  animation: panel-tooltip-out ${exd}ms var(--ease-in) both;
+}`;
+
+  navigator.clipboard.writeText(css).then(() => {
+    const btn = document.getElementById("copy-btn");
+    btn.textContent = "Copied!";
+    setTimeout(() => btn.textContent = "Copy CSS", 1500);
+  });
+});
+
+updateOutput();
+</script>
+</body>
+</html>
